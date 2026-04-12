@@ -37,6 +37,3 @@ docker/     # Dockerfile
 - False positive rate <= 15%
 - Process a PCAP file in under 5 seconds
 
-## Notes
-
-All traffic is generated locally in a controlled environment (No real or external network traffic is used)
