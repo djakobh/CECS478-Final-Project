@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  detector:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ./data:/app/data
+      - ./src:/app/src
+    command: ["python", "src/main.py"]
