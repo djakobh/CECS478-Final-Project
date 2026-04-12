@@ -4,7 +4,7 @@ CECS 478 Final Project
 
 ## Overview
 
-This project detects protocol impersonation attacks where malicious traffic is used to disguise themselves as legit HTTP or DNS traffic to get by detection systems. It analyzes PCAP files and flags traffic that doesn't behave consistently with the protocol it says it is.
+This project detects protocol impersonation attacks where malicious traffic is used to disguise themselves as legit network traffic to get by detection systems. It analyzes PCAP files and flags traffic that doesn't behave consistently with the protocol it says it is.
 
 ## Setup
 
