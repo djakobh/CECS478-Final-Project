@@ -8,4 +8,4 @@ services:
     volumes:
       - ./data:/app/data
       - ./src:/app/src
-    command: ["python", "src/main.py"]
+    command: ["./detector"]

@@ -1,13 +1,13 @@
-FROM python:3.11-slim
+FROM gcc:latest
 
-RUN apt-get update && apt-get install -y libpcap-dev tcpdump
+RUN apt-get update && apt-get install -y libpcap-dev
 
 WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install -r requirements.txt
 
 COPY src/ ./src/
 COPY tests/ ./tests/
 
-CMD ["python", "src/main.py"]
+RUN gcc -o detector src/main.c -lpcap
+RUN gcc -o tests/test_stub tests/test_stub.c
+
+CMD ["./detector"]
