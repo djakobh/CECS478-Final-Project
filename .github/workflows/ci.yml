@@ -52,8 +52,4 @@ jobs:
         run: ./t_http && ./t_dns && ./t_det && ./t_fe
 
       - name: Print coverage summary
-        run: |
-          gcov src/http_validator/http_validator.c \
-               src/dns_validator/dns_validator.c \
-               src/detector/detector.c \
-               src/feature_extract/feature_extract.c
+        run: gcovr --root . --filter 'src/' --print-summary
