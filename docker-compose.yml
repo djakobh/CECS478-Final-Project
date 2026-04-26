@@ -1,11 +1,19 @@
 version: "3.9"
 
 services:
+  traffic_gen:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ./data:/app/data
+    command: ["./traffic_gen"]
+
   detector:
     build:
       context: .
       dockerfile: docker/Dockerfile
     volumes:
       - ./data:/app/data
-      - ./src:/app/src
-    command: ["./detector"]
+      - ./artifacts/release:/app/artifacts/release
+    command: ["./detector", "data/capture.pcap", "data/ground_truth.txt"]

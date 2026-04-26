@@ -1,0 +1,31 @@
+# Runtime-generated data files (reproduced by make up)
+data/capture.pcap
+data/ground_truth.txt
+
+# Compiled binaries (built inside Docker, not on host)
+# Leading slash anchors each pattern to the repo root only
+/detector
+/traffic_gen
+/tests/test_http_validator
+/tests/test_dns_validator
+/tests/test_detector
+/tests/test_feature_extract
+/tests/test_stub
+/t_http
+/t_dns
+/t_det
+/t_fe
+
+# gcov coverage files
+*.gcda
+*.gcno
+*.gcov
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Tracking what needs to be done (Personal)
+/context/

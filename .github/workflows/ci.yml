@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker compose build
+
+      - name: Run unit tests
+        run: docker compose run --rm --entrypoint "" detector ./tests/run_tests.sh
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc libpcap-dev gcovr
+
+      - name: Build with coverage instrumentation
+        run: |
+          gcc -fprofile-arcs -ftest-coverage -o t_http \
+              tests/test_http_validator.c \
+              src/http_validator/http_validator.c
+          gcc -fprofile-arcs -ftest-coverage -o t_dns \
+              tests/test_dns_validator.c \
+              src/dns_validator/dns_validator.c
+          gcc -fprofile-arcs -ftest-coverage -o t_det \
+              tests/test_detector.c \
+              src/detector/detector.c \
+              src/http_validator/http_validator.c \
+              src/dns_validator/dns_validator.c
+          gcc -fprofile-arcs -ftest-coverage -o t_fe \
+              tests/test_feature_extract.c \
+              src/feature_extract/feature_extract.c
+
+      - name: Run tests under coverage
+        run: ./t_http && ./t_dns && ./t_det && ./t_fe
+
+      - name: Print coverage summary
+        run: |
+          gcov src/http_validator/http_validator.c \
+               src/dns_validator/dns_validator.c \
+               src/detector/detector.c \
+               src/feature_extract/feature_extract.c
