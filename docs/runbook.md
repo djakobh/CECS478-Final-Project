@@ -23,19 +23,22 @@ Expected output from `make demo`:
 
 ```
 === Protocol Impersonation Detection — Results ===
-Packets processed : 10
-True  Positives   : 6
+Packets processed : 100
+Parse errors      : 0
+True  Positives   : 60
 False Positives   : 0
-True  Negatives   : 4
+True  Negatives   : 40
 False Negatives   : 0
 Detection rate    : 100.0%
 False positive    : 0.0%
 Accuracy          : 100.0%
-Processing time   : <1 ms
+Processing time   : X.XX ms
 Log               : artifacts/release/results.log
 Metrics CSV       : artifacts/release/metrics.csv
 Summary JSON      : artifacts/release/summary.json
 ```
+
+The dataset is 100 packets — 40 legit and 60 malicious, interleaved in a 4:6 ratio per 10-packet block.
 
 ---
 
@@ -45,8 +48,7 @@ Summary JSON      : artifacts/release/summary.json
 make test
 ```
 
-Runs all four unit test binaries inside the container via `tests/run_tests.sh`.
-All tests must pass before the suite exits 0.
+Runs all four unit test binaries inside the container via `tests/run_tests.sh`. All tests must pass.
 
 ---
 
@@ -56,8 +58,7 @@ All tests must pass before the suite exits 0.
 make coverage
 ```
 
-Compiles all source modules with `-fprofile-arcs -ftest-coverage`, runs the test suite,
-then calls `gcov` on each source file. Coverage summary is printed to stdout.
+Recompiles with `-fprofile-arcs -ftest-coverage`, runs the test suite, then prints a `gcov` coverage summary to stdout.
 
 ---
 
@@ -69,13 +70,13 @@ make up
 make demo
 ```
 
-Total time on a clean machine: under 5 minutes (dominated by Docker image pull).
+Total time on a clean machine: under 5 minutes (mostly Docker image pull).
 
 ---
 
 ## Output Artifacts
 
-After `make demo`, the following files are written:
+After `make demo`, these files are written:
 
 | File | Description |
 |---|---|
@@ -93,7 +94,7 @@ After `make demo`, the following files are written:
 Run `chmod 777 data/` on the host before `make up`.
 
 **Docker build fails on libpcap**
-Ensure you have internet access during the build step. The Dockerfile runs `apt-get install libpcap-dev`.
+Make sure you have internet access during the build — the Dockerfile installs `libpcap-dev` via apt.
 
 **`make demo` reports "cannot open ground_truth file"**
-Run `make up` first to generate `data/ground_truth.txt` before running `make demo`.
+Run `make up` first. It generates `data/ground_truth.txt` before the detector can use it.
