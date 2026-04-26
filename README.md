@@ -116,10 +116,10 @@ See [docs/security-invariants.md](docs/security-invariants.md) for full details.
 
 ---
 
-## Demo
+## Demo Video (via YouTube)
 
-> Demo video coming in Week 16 final release.
-
+[![Demo Video](https://img.youtube.com/vi/3d92wTgTIMI/maxresdefault.jpg)](https://youtu.be/3d92wTgTIMI)
+ 
 ---
 
 ## Project Structure
