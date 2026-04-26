@@ -7,10 +7,7 @@ CECS 478 — Final Project | Dylan Hartley
 ---
 
 ## Overview
-
-Detects protocol impersonation attacks where malicious traffic disguises itself as legitimate
-HTTP or DNS traffic to bypass detection systems. The system generates synthetic attack traffic,
-captures it as a PCAP, validates each packet's protocol compliance, and reports detection metrics.
+This project detects protocol impersonation attacks where malicious traffic is used to disguise themselves as legit network traffic to get by detection systems. It analyzes PCAP files and flags traffic that doesn't behave consistently with the protocol it says it is.
 
 **Vertical slice:** `traffic_gen` → `capture.pcap` → `feature_extract` → `http_validator` /
 `dns_validator` → `detector` → `results.log` + `metrics.csv` + `summary.json`
