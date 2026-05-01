@@ -1,11 +1,11 @@
 {
-  "total": 100,
-  "tp": 60,
+  "total": 1000,
+  "tp": 150,
   "fp": 0,
-  "tn": 40,
+  "tn": 850,
   "fn": 0,
   "detection_rate": 1.0000,
   "false_positive_rate": 0.0000,
   "accuracy": 1.0000,
-  "processing_ms": 4.53
+  "processing_ms": 95.89
 }

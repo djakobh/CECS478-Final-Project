@@ -28,6 +28,12 @@ ValidationResult http_validate(const PacketFeatures *pkt) {
         return r;
     }
 
+    /* Rule 8: no null bytes anywhere in payload (null byte injection) */
+    if (memchr(pkt->payload, '\0', pkt->payload_len)) {
+        snprintf(r.reason, sizeof(r.reason), "null byte in payload");
+        return r;
+    }
+
     /* Null-terminate a copy for string ops (safe — payload is bounded) */
     char buf[MAX_PAYLOAD + 1];
     uint32_t len = pkt->payload_len < MAX_PAYLOAD ? pkt->payload_len : MAX_PAYLOAD;
@@ -47,9 +53,10 @@ ValidationResult http_validate(const PacketFeatures *pkt) {
         return r;
     }
 
-    /* Rule 5: must contain HTTP version string */
-    if (!strstr(buf, "HTTP/1.") && !strstr(buf, "HTTP/2")) {
-        snprintf(r.reason, sizeof(r.reason), "missing HTTP version");
+    /* Rule 5: must contain a recognized HTTP version (1.0, 1.1, or 2) */
+    if (!strstr(buf, "HTTP/1.0") && !strstr(buf, "HTTP/1.1") &&
+        !strstr(buf, "HTTP/2")) {
+        snprintf(r.reason, sizeof(r.reason), "invalid or missing HTTP version");
         return r;
     }
 
@@ -64,6 +71,21 @@ ValidationResult http_validate(const PacketFeatures *pkt) {
     if (!crlf || !strstr(crlf + 2, ":")) {
         snprintf(r.reason, sizeof(r.reason), "no headers found after request line");
         return r;
+    }
+
+    /* Rule 9: duplicate Content-Length header indicates request smuggling */
+    {
+        int cl_count = 0;
+        const char *p = buf;
+        while ((p = strstr(p, "Content-Length:")) != NULL) {
+            cl_count++;
+            p++;
+        }
+        if (cl_count > 1) {
+            snprintf(r.reason, sizeof(r.reason),
+                     "duplicate Content-Length header (request smuggling)");
+            return r;
+        }
     }
 
     r.is_valid = 1;
