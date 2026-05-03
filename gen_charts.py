@@ -1,14 +1,3 @@
-"""
-gen_charts.py — Generate chart artifacts from metrics.csv and summary.json
-Output: artifacts/release/chart_metrics.png
-        artifacts/release/chart_confusion.png
-        artifacts/release/chart_traffic.png
-
-Usage:
-    python3 data/gen_charts.py
-    (run after make demo has populated artifacts/release/)
-"""
-
 import csv
 import json
 import os
@@ -28,9 +17,7 @@ CSV_PATH     = "artifacts/release/metrics.csv"
 SUMMARY_PATH = "artifacts/release/summary.json"
 OUT_DIR      = "artifacts/release"
 
-# ---------------------------------------------------------------------------
 # Load data
-# ---------------------------------------------------------------------------
 
 def load_summary():
     with open(SUMMARY_PATH) as f:
@@ -50,9 +37,7 @@ def load_csv():
             })
     return rows
 
-# ---------------------------------------------------------------------------
 # Chart 1: Detection metrics bar chart
-# ---------------------------------------------------------------------------
 
 def chart_metrics(summary):
     labels  = ["Detection Rate", "False Positive Rate", "Accuracy"]
@@ -94,9 +79,7 @@ def chart_metrics(summary):
     plt.close()
     print(f"Wrote {path}")
 
-# ---------------------------------------------------------------------------
 # Chart 2: Confusion matrix heatmap
-# ---------------------------------------------------------------------------
 
 def chart_confusion(summary):
     tp = summary["tp"]
@@ -114,8 +97,8 @@ def chart_confusion(summary):
 
     ax.set_xticks(range(2))
     ax.set_yticks(range(2))
-    ax.set_xticklabels(labels_col, fontsize=10)
-    ax.set_yticklabels(labels_row, fontsize=10)
+    ax.set_xticklabels(labels_col, fontsize=8)
+    ax.set_yticklabels(labels_row, fontsize=8)
 
     cell_labels = [["TP", "FN"], ["FP", "TN"]]
     for i in range(2):
@@ -129,13 +112,11 @@ def chart_confusion(summary):
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     plt.tight_layout()
     path = os.path.join(OUT_DIR, "chart_confusion.png")
-    plt.savefig(path, dpi=150)
+    plt.savefig(path, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"Wrote {path}")
 
-# ---------------------------------------------------------------------------
 # Chart 3: Per-packet verdict timeline (sampled for readability)
-# ---------------------------------------------------------------------------
 
 def chart_traffic(rows, summary):
     indices   = [r["index"]    for r in rows]
@@ -174,9 +155,7 @@ def chart_traffic(rows, summary):
     plt.close()
     print(f"Wrote {path}")
 
-# ---------------------------------------------------------------------------
 # Main
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     for required in [CSV_PATH, SUMMARY_PATH]:
