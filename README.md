@@ -9,28 +9,14 @@ CECS 478 — Final Project | Dylan Hartley
 ## Overview
 This project detects protocol impersonation attacks where malicious traffic is used to disguise themselves as legit network traffic to get by detection systems. It analyzes PCAP files and flags traffic that doesn't behave consistently with the protocol it says it is.
 
-**Vertical slice:** `traffic_gen` → `capture.pcap` → `feature_extract` → `http_validator` /
-`dns_validator` → `detector` → `results.log` + `metrics.csv` + `summary.json`
 
 ---
 
 ## Architecture
+**Vertical slice:** `traffic_gen` → `capture.pcap` → `feature_extract` → `http_validator` /
+`dns_validator` → `detector` → `results.log` + `metrics.csv` + `summary.json`
 
-```
-Legit Traffic Source          Fake Protocol Traffic Source
-        \                              /
-         +-----> Packet Capture Layer <----+
-                        |
-                  .pcap file (Dataset)
-                        |
-          Feature extraction (ports, headers, payload)
-                        |
-           Protocol Validation (HTTP / DNS rules)
-                        |
-               Detection Analysis (TP/FP/TN/FN)
-                        |
-           Output Logs and Results (log, CSV, JSON)
-```
+![System design diagram](docs/sysdesign.png)
 
 **Components:**
 
@@ -53,8 +39,7 @@ Requirements: **Docker**, **Docker Compose v2**, **Make**
 ```bash
 git clone https://github.com/djakobh/CECS478-Final-Project.git
 cd CECS478-Final-Project
-make up      # builds image, generates synthetic pcap
-make demo    # runs detector, prints results
+make clean && make up && make demo
 ```
 
 Full rebuild completes in under 5 minutes on a fresh clone.
@@ -75,7 +60,7 @@ Full rebuild completes in under 5 minutes on a fresh clone.
 
 ## Output Artifacts
 
-After `make demo`:
+After make demo:
 
 | File | Description |
 |---|---|
@@ -90,8 +75,8 @@ After `make demo`:
 - All code runs as a non-root user (`appuser`) inside the container
 - Pcap path is validated — rejects `..` traversal and paths outside `data/`
 - Raw payload bytes are never written to log files
-- Synthetic traffic is localhost-only (`127.0.0.1`); no real network interfaces used
-- Packet generation is bounded by `MAX_PACKETS = 100`
+- Synthetic traffic is localhost-only - `127.0.0.1`
+- Packet generation is bounded by `MAX_PACKETS = 1000`
 
 See [docs/security-invariants.md](docs/security-invariants.md) for full details.
 
@@ -103,6 +88,7 @@ See [docs/security-invariants.md](docs/security-invariants.md) for full details.
 - [docs/security-invariants.md](docs/security-invariants.md) — Security guarantees
 - [docs/what-works-whats-next.md](docs/what-works-whats-next.md) — Status and roadmap
 - [docs/results-draft.md](docs/results-draft.md) — Initial evaluation results
+- [docs/CECS 478 Final Report.pdf](docs/CECS%20478%20Final%20Report.pdf) - Final Report as a PDF 
 
 ---
 
@@ -116,7 +102,7 @@ See [docs/security-invariants.md](docs/security-invariants.md) for full details.
 
 ---
 
-## Demo Video (via YouTube)
+## Final Demo Video (via YouTube)
 
 [![Demo Video](https://img.youtube.com/vi/3d92wTgTIMI/maxresdefault.jpg)](https://youtu.be/3d92wTgTIMI)
  
