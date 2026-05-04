@@ -21,11 +21,11 @@ Expected output from `make demo`:
 
 ```
 === Protocol Impersonation Detection — Results ===
-Packets processed : 100
+Packets processed : 1000
 Parse errors      : 0
-True  Positives   : 60
+True  Positives   : 150
 False Positives   : 0
-True  Negatives   : 40
+True  Negatives   : 850
 False Negatives   : 0
 Detection rate    : 100.0%
 False positive    : 0.0%

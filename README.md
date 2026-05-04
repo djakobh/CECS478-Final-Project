@@ -98,7 +98,7 @@ See [docs/security-invariants.md](docs/security-invariants.md) for full details.
 |---|---|---|
 | Detection rate | ≥ 85% | 100% (synthetic dataset) |
 | False positive rate | ≤ 15% | 0% (synthetic dataset) |
-| Processing time | ≤ 5 seconds | < 1 ms |
+| Processing time | ≤ 5 seconds | 23.58 ms |
 
 ---
 
