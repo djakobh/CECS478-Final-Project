@@ -116,45 +116,6 @@ def chart_confusion(summary):
     plt.close()
     print(f"Wrote {path}")
 
-# Chart 3: Per-packet verdict timeline (sampled for readability)
-
-def chart_traffic(rows, summary):
-    indices   = [r["index"]    for r in rows]
-    predicted = [r["predicted"] for r in rows]
-    actual    = [r["actual"]    for r in rows]
-
-    # Color each packet by outcome
-    colors = []
-    for p, a in zip(predicted, actual):
-        if p == 1 and a == 1:   colors.append("#e74c3c")   # TP — red
-        elif p == 0 and a == 0: colors.append("#2ecc71")   # TN — green
-        elif p == 1 and a == 0: colors.append("#e67e22")   # FP — orange
-        else:                   colors.append("#9b59b6")   # FN — purple
-
-    fig, ax = plt.subplots(figsize=(10, 3))
-    ax.scatter(indices, [0] * len(indices), c=colors, s=18, marker="|", linewidths=1.5)
-
-    ax.set_xlim(-1, max(indices) + 1)
-    ax.set_ylim(-0.5, 0.5)
-    ax.set_yticks([])
-    ax.set_xlabel("Packet Index")
-    ax.set_title("Per-Packet Verdict Timeline", fontsize=13, fontweight="bold")
-
-    legend_patches = [
-        mpatches.Patch(color="#e74c3c", label=f"True Positive ({summary['tp']})"),
-        mpatches.Patch(color="#2ecc71", label=f"True Negative ({summary['tn']})"),
-        mpatches.Patch(color="#e67e22", label=f"False Positive ({summary['fp']})"),
-        mpatches.Patch(color="#9b59b6", label=f"False Negative ({summary['fn']})"),
-    ]
-    ax.legend(handles=legend_patches, loc="upper right", fontsize=8, ncol=2)
-    ax.xaxis.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    path = os.path.join(OUT_DIR, "chart_traffic.png")
-    plt.savefig(path, dpi=150)
-    plt.close()
-    print(f"Wrote {path}")
-
 # Main
 
 if __name__ == "__main__":
