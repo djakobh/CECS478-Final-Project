@@ -14,7 +14,7 @@ This project detects protocol impersonation attacks where malicious traffic is u
 
 ## Architecture
 **Vertical slice:** `traffic_gen` → `capture.pcap` → `feature_extract` → `http_validator` /
-`dns_validator` → `detector` → `results.log` + `metrics.csv` + `summary.json`
+`dns_validator` → `detector` → `results`
 
 ![System design diagram](docs/sysdesign.png)
 
