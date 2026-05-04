@@ -6,8 +6,6 @@
 - Make
 - Git
 
-Tested on Ubuntu 22.04 and macOS 14. Windows users should use WSL2.
-
 ---
 
 ## Fresh Clone & Full Run
@@ -15,9 +13,9 @@ Tested on Ubuntu 22.04 and macOS 14. Windows users should use WSL2.
 ```bash
 git clone https://github.com/djakobh/CECS478-Final-Project.git
 cd CECS478-Final-Project
-make up      # builds image + generates synthetic pcap
-make demo    # runs detector pipeline, prints results
+make clean && make up && make demo
 ```
+Total time on a clean machine: under 5 minutes (mostly Docker image pull).
 
 Expected output from `make demo`:
 
@@ -38,7 +36,7 @@ Metrics CSV       : artifacts/release/metrics.csv
 Summary JSON      : artifacts/release/summary.json
 ```
 
-The dataset is 100 packets — 40 legit and 60 malicious, interleaved in a 4:6 ratio per 10-packet block.
+The dataset is 1000 packets — 850 legit and 150 malicious
 
 ---
 
@@ -62,18 +60,6 @@ Recompiles with `-fprofile-arcs -ftest-coverage`, runs the test suite, then prin
 
 ---
 
-## Rebuild from Scratch
-
-```bash
-make clean   # removes containers, images, volumes
-make up
-make demo
-```
-
-Total time on a clean machine: under 5 minutes (mostly Docker image pull).
-
----
-
 ## Output Artifacts
 
 After `make demo`, these files are written:
@@ -94,7 +80,7 @@ After `make demo`, these files are written:
 Run `chmod 777 data/` on the host before `make up`.
 
 **Docker build fails on libpcap**
-Make sure you have internet access during the build — the Dockerfile installs `libpcap-dev` via apt.
+Make sure you have internet access during the build. The Dockerfile installs `libpcap-dev` via apt.
 
 **`make demo` reports "cannot open ground_truth file"**
 Run `make up` first. It generates `data/ground_truth.txt` before the detector can use it.

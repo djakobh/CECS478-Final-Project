@@ -102,7 +102,7 @@ See [docs/security-invariants.md](docs/security-invariants.md) for full details.
 
 ---
 
-## Final Demo Video (via YouTube)
+## Final Demo Video (Code Execution)
 
 [![Demo Video](https://img.youtube.com/vi/BSGneJ2-8zE/maxresdefault.jpg)](https://www.youtube.com/watch?v=BSGneJ2-8zE)
  

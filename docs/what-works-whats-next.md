@@ -1,85 +1,77 @@
-# What Works
+# What Works / What's Next
 
-## End-to-End Pipeline
+## What Works
 
-The full pipeline is working:
-`traffic_gen` → `data/capture.pcap` + `data/ground_truth.txt` → `feature_extract` → `http_validator` / `dns_validator` → `detector` → `results.log` + `metrics.csv` + `summary.json`
+The full end-to-end pipeline is complete:
 
-`make up && make demo` runs on a fresh clone in under 5 minutes.
+`traffic_gen` -> `data/capture.pcap` + `data/ground_truth.txt` -> `feature_extract` -> `http_validator` / `dns_validator` -> `detector` -> `results.log` + `metrics.csv` + `summary.json`
+
+`make up && make demo` builds/runs the system and reproduces the main result.
 
 ---
 
 ## Traffic Generation
 
-Synthetic pcap generation using `pcap_open_dead` + `pcap_dump_open` — no live network required.
+Synthetic pcap generation works without live network traffic. The generator uses `pcap_open_dead` and `pcap_dump_open`, so packets are written directly to `data/capture.pcap`.
 
-Produces **1000 packets total**: 850 legit and 150 malicious, interleaved in a 17:3 ratio per 20-packet block (85%/15%). The 15% malicious rate reflects realistic low-rate attack traffic rather than an obvious flood.
+The final dataset contains 1000 packet:
 
-**Legit packets (850):**
-- HTTP GET, POST, PUT, HEAD on TCP port 80
-- HTTP GET, POST on TCP port 443
-- DNS A-record queries on UDP port 53 (example.com, test.local, google.com)
-
-**Malicious packets (150) — 12 attack variants cycling:**
-
-Structural attacks (fail early in validator):
-- HTTP payload on UDP port 53 (protocol/port impersonation)
-- DNS binary header on TCP port 80 (protocol impersonation)
-- Invalid HTTP method (`BADVERB`)
-- HTTP request missing Host header
-- HTTP request missing version string
-- Truncated DNS header (4 bytes, below 12-byte minimum)
-- HTTP POST on UDP port 53
-
-Subtle attacks (pass basic checks, caught by behavioral rules):
-- HTTP version spoof (`HTTP/1.9`) — passes method/Host checks, fails tightened version rule
-- DNS tunneling (40-char base64 subdomain label) — passes port/header/QDCOUNT checks, fails label-length heuristic
-- DNS response masquerading as query (QR bit=1) — passes port/length/QDCOUNT, fails QR bit check
-- HTTP request smuggling (duplicate `Content-Length`) — passes all structural rules, fails duplicate-header check
-- HTTP null byte injection (binary appended after valid headers) — fails null byte payload check
+- 850 legitimate packets
+- 150 malicious packets
+- 17:3 legit-to-malicious ratio per 20-packet block
 
 ---
 
 ## Protocol Validation
 
-- **HTTP validator (9 rules):** TCP protocol, port (80/443), non-empty payload, no null bytes, valid method, recognized HTTP version (1.0/1.1/2 only), Host header, header structure, no duplicate Content-Length
-- **DNS validator (7 rules):** UDP/TCP protocol, port (53), minimum header length (12 bytes), QR bit=0 (query not response), QDCOUNT > 0, valid label-prefixed question name with max 32-byte label length, recognized QTYPE
+The HTTP validator checks protocol, port, payload presence, null bytes, method, HTTP version, Host header, header structure, and duplicate `Content-Length`.
+
+The DNS validator checks protocol, port, minimum header length, QR bit, QDCOUNT, question-name structure, label length, and QTYPE.
+
+The detector classifies a packet as malicious when both validators reject it.
 
 ---
 
-## Detection & Metrics
+## Final Results
 
-- Binary classifier: a packet is flagged if both validators reject it
-- TP/FP/TN/FN computed against ground truth labels
-- Detection rate, false positive rate, and accuracy exported to `summary.json`
-- Per-packet results exported to `metrics.csv`
+The final demo result is:
 
----
+| Metric | Result |
+|---|---:|
+| Packets processed | 1000 |
+| True positives | 150 |
+| False positives | 0 |
+| True negatives | 850 |
+| False negatives | 0 |
+| Detection rate | 100.0% |
+| False positive rate | 0.0% |
+| Accuracy | 100.0% |
+| Processing time | 23.58 ms |
 
-## Observability
-
-- Timestamped per-packet log at `artifacts/release/results.log`
-- No raw payload bytes written to disk
+Evidence artifacts are stored in `artifacts/release/`, including `results.log`, `metrics.csv`, `summary.json`, and the result charts.
 
 ---
 
 ## Hardening
 
-- Non-root Docker execution (`USER appuser`)
-- Pcap path traversal check in `main.c`
-- Packet generation bounded at `TOTAL = 100` in `traffic_gen.c`
-- Localhost-only synthetic traffic (`127.0.0.1`)
+- Docker runs the detector as non-root `appuser`
+- Pcap path validation rejects traversal attempts
+- Raw payload bytes are not written to logs
+- Synthetic traffic stays localhost-only
+- Malicious packets are written to a pcap file, not transmitted live
 
 ---
 
-## Testing
+## Testing And CI
 
-- 4 test modules covering all core components
-- 25 individual test cases (happy path, negative, edge cases, and subtle attack cases)
-- `tests/run_tests.sh` entry point for CI
+The test suite covers the HTTP validator, DNS validator, detector, and feature extractor. The Docker test target passes with 4 test binaries and 0 failures.
+
+GitHub Actions builds the Docker image, runs the unit tests, and prints a coverage summary.
 
 ---
 
-## CI
+## What's Next
 
-GitHub Actions pipeline: builds the Docker image, runs the test suite, and prints a gcov coverage summary.
+- Test against real benign captures from `curl`, browser traffic, `dig`, and `nslookup`
+- Add deeper HTTP/DNS parsing and clearer HTTPS/TLS separation
+- Add connection-level or flow-level analysis for repeated suspicious behavior
